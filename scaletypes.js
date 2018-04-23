@@ -1,0 +1,3 @@
+var scaletypes = {
+	"lin": "linear"
+}

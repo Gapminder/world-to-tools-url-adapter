@@ -1,0 +1,319 @@
+<html>
+<head>
+	<script   src="https://code.jquery.com/jquery-1.11.3.min.js"   integrity="sha256-7LkWEzqTdpEfELxcZZlS6wAx5Ff13zZ83lYO2/ujj7g="   crossorigin="anonymous"></script>
+	<script src="jquery.ba-bbq.js" crossorigin="anonymous"></script>
+
+	  <link data-require="mocha@*" data-semver="1.13.0" rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/mocha/1.13.0/mocha.css" />
+	  <script data-require="mocha@*" data-semver="1.13.0" src="//cdnjs.cloudflare.com/ajax/libs/mocha/1.13.0/mocha.js"></script>
+	  <script data-require="mocha-chai@*" data-semver="1.9.0" src="//cdnjs.cloudflare.com/ajax/libs/chai/1.9.0/chai.js"></script>
+	  <script type="text/javascript" src="urlon.js"></script>
+
+	  <script src="indicators.json"></script>
+	  <script src="scaletypes.js"></script>
+	  <script src="geoproperties.json"></script>
+	  <script src="countries.json"></script>
+
+	  <script>
+	    mocha.setup('bdd');
+	  </script>
+
+</head>
+<body>
+
+	<script type="text/javascript">
+	// http://stackoverflow.com/a/5639455
+	(function(){
+	    var cookies;
+
+	    function readCookie(name,c,C,i){
+	        if(cookies){ return cookies[name]; }
+
+	        c = document.cookie.split('; ');
+	        cookies = {};
+
+	        for(i=c.length-1; i>=0; i--){
+	           C = c[i].split('=');
+	           cookies[C[0]] = C[1];
+	        }
+
+	        return cookies[name];
+	    }
+
+	    window.readCookie = readCookie; // or expose it however you want
+	})();
+
+	// http://stackoverflow.com/a/2880929
+	var urlParams;
+	(window.onpopstate = function () {
+	    var match,
+	        pl     = /\+/g,  // Regex for replacing addition symbol with a space
+	        search = /([^&=]+)=?([^&]*)/g,
+	        decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+	        query  = window.location.search.substring(1);
+
+	    urlParams = {};
+	    while (match = search.exec(query))
+	       urlParams[decode(match[1])] = decode(match[2]);
+	})();
+
+	var toolsURI = 'index2.html'; // window.location.protocol + '//gapminder.org/tools/';
+	var use_gapminder_world = window.readCookie('use_gapminder_world');
+
+	if ('use_gapminder_tools' in urlParams || typeof use_gapminder_world === 'undefined') {
+		use_gapminder_world = 'false';
+		document.cookie = 'use_gapminder_world=' + use_gapminder_world;
+	}
+
+	if ('use_gapminder_world' in urlParams) {
+		use_gapminder_world = 'true';
+		document.cookie = 'use_gapminder_world=' + use_gapminder_world;
+	}
+
+	/*if (use_gapminder_world == 'false') {
+		var gwHash = parseHash(window.location.hash);
+		var toolsHash = createToolsHash(gwHash);
+		window.location.href = toolsURI;
+	}*/
+
+	//parseHash("#$majorMode=chart$is;shi=t;ly=2003;lb=f;il=t;fs=11;al=21;stl=t;st=t;nsl=t;se=t$wst;tts=C$ts;sp=6;ti=1820$zpv;v=0$inc_x;mmid=XCOORDS;iid=phAwcNAVuyj1jiMAkmq1iMg;by=ind$inc_y;mmid=YCOORDS;iid=phAwcNAVuyj1gkNuUEXOGag;by=ind$inc_s;uniValue=8.21;iid=phAwcNAVuyj1NHPC9MyZ9SQ;by=ind$inc_c;uniValue=255;gid=CATID0;iid=pyj6tScZqmEfbZyl0qjbiRQ;by=grp$map_x;scale=log;dataMin=294;dataMax=76977$map_y;scale=lin;dataMin=-1.2196;dataMax=26$map_s;sma=58;smi=1$cd;bd=0$inds=");
+
+
+	function parseHash(hashString) {
+
+		var obj = {};
+		hashString = hashString.slice(hashString.lastIndexOf('#')+1);
+		var parts = hashString.split('$');
+		parts.forEach(function(part) {
+			
+			if (part=="") return; // ignore empty
+			var subparts = part.split(';');
+			var firstSubpart = subparts.shift().split('=');
+			if (firstSubpart[1]) subparts.unshift(firstSubpart[1]);
+			
+
+			subparts.forEach(function(subpart) {
+				var values = subpart.split('=');
+				if (values[1] || firstSubpart[0] == 'inds') {
+					if (!obj[firstSubpart[0]]) {
+						obj[firstSubpart[0]] = {};
+					}
+					if (firstSubpart[0] == 'inds' && !values[1]) {
+						values = values[0].split('_');
+					}
+					obj[firstSubpart[0]][values[0]] = values[1];
+				}
+				else {
+					if (!obj[firstSubpart[0]]) {
+						obj[firstSubpart[0]] = [];
+					}
+					obj[firstSubpart[0]].push(values[0]);
+				}
+			});
+
+			if (!obj[firstSubpart[0]]) obj[firstSubpart[0]] = {};
+			
+		});
+		return obj;
+/*
+	    jsonString = '{' + 
+	    	hashString
+	    	.slice(hashString.lastIndexOf('#'))
+	    	.replace(/;$/gi, '')                              // remove empty ending ,
+	    	.replace(/\$(\w+)=([^\$]*)/gi, '$$$1:[$2],')          // set up root level arrays
+	    	.replace(/\$(\w+);([^\$]*)/gi, '$1:{$2},')            // root level objects
+	    	//.replace(/(\w+)=([^;{}\[\]]+)/gi, '"$1":"$2"') 
+	    	.replace(/([^\w.-]*)([\w.-]+)([^\w.-]*)/gi, '$1"$2"$3')    // add quotes around all text
+	    	.replace(/;;/gi, ',"",')                              // empty array value
+	    	.replace(/,(?=[,;\]])/gi, ',""')                              // empty array value
+	    	.replace(/\[;/gi, '["",')                              // empty array value
+	    	
+	    	.replace(/([\w"]+:)\[([\w"]+,[\w",]+;[\w",;=]*)\]/gi, '$1{$2}')      // nested object
+
+	    	.replace(/\{([\w"]+),([\w",]+)/gi, '{$1:[$2]')
+	    	.replace(/\;([\w"]+),([\w",]+)/gi, '$1:[$2]')
+	    	
+	    	.replace(/([;,][\w"]+=[\w"]+)\]/gi, ']$1') // hack to get 'modified' not to break parsing. Modified is not always on root!
+	    	
+	    	.replace(/\]"/gi, '];"')                           // join with ,
+	    	.replace(/;}/gi, '}')                              // remove empty ending ,
+	    	.replace(/(\w+)=,/gi, '"$1":"",')                  // empty key/value
+	    	.replace(/\$/gi, '')                               // remove dollar signs
+	    	.replace(/;/gi, ",")                               // json ,
+	    	.replace(/=/gi, ":")                               // json :
+
+
+	    	.substring(1)
+	    	.slice(0,-1) + '}';
+
+	    console.log(hashString);
+	    console.log(jsonString);
+
+	    jsonObject = JSON.parse(jsonString);
+
+	    console.log(jsonObject);
+
+
+	    return jsonObject;
+	    */
+	}
+
+	function createToolsHash(gwHash) {
+
+		var use = {
+			'ind': 'indicator',
+			'grp': 'property',
+			'const': 'constant'
+		};
+		var which = {
+			'ind': indicators,
+			'grp': geoproperties,
+			'const': '_default'
+		}
+
+		var hooks = ['x', 'y', 'c', 's'];
+		var maps = { 'inc_x': 'map_x', 'inc_y': 'map_y'}
+		var gt_hooks = {};
+		// set generic id instead of iid and gid
+		hooks.forEach(function(hook) {
+			var inc = 'inc_' + hook;
+			var map = 'map_' + hook;
+			gt_hooks[hook] = {};
+
+			gt_hooks[hook].use = use[gwHash[inc].by];
+			gt_hooks[hook].which = (gwHash[inc].by == 'ind') ? which[gwHash[inc].by][gwHash[inc].iid] : which[gwHash[inc].by][gwHash[inc].gid];
+
+			if (gt_hooks[hook].which == 'time') {
+				gt_hooks[hook].allow = {
+					scales: ["linear", "log", "time"]
+				};
+				gt_hooks[hook].scaleType = 'time'
+			}
+
+			if (gwHash[map]) {
+				if (hook == 's') {
+					gt_hooks[hook].extent = [(gwHash[map].smi/120),(gwHash[map].sma/120)];
+				} else {
+					gt_hooks[hook].scaleType = scaletypes[gwHash[map].scale] || gt_hooks[hook].scaleType || gwHash[map].scale; // if time it's already set
+ 					gt_hooks[hook].zoomedMin = gwHash[map].dataMin;
+					gt_hooks[hook].zoomedMax = gwHash[map].dataMax;
+					gt_hooks[hook].domainMin = null;
+					gt_hooks[hook].domainMax = null;
+				}
+			}
+		});
+
+		var geo_ids = Object.keys(gwHash.inds);
+		var select = [];
+		var trails = false;
+		geo_ids.forEach(function(geo_id) {
+			if (countries[geo_id]) {
+				var trailStartTime = gwHash.inds[geo_id].substring(3,7);
+				if (/^\d+$/.test(trailStartTime)) {
+					select.push({
+						geo: countries[geo_id],
+						trailStartTime: trailStartTime
+					});
+					trails = true;
+				}
+				else
+					select.push({
+						geo: countries[geo_id]
+					});
+			}
+
+		});
+
+		var obj;
+		if (gwHash.majorMode == 'chart') {
+			obj = {
+				"chart-type": "bubbles",
+				state: {
+					time: {
+						value: gwHash.ts.ti || null,
+					},
+					entities: {
+					},
+					marker: {
+						select: select,
+						opacitySelectDim: (gwHash.is.al/100),
+						axis_x: gt_hooks.x,
+						axis_y: gt_hooks.y,
+						size: gt_hooks.s,
+						color: gt_hooks.c
+					}
+				},
+				ui: {
+					chart: {
+						trails: trails
+					}
+				}
+			}
+		} else {
+			obj = {
+				"chart-type": "map",
+				state: {
+					time: {
+						value: gwHash.ts.ti || null,
+					},
+					entities: {
+					},
+					marker: {
+						select: select,
+						opacitySelectDim: (gwHash.is.al/100),
+						lat: {
+							use: 'property',
+							which: 'latitude'
+						},
+						lng: {
+							use: 'property',
+							which: 'longitude'
+						},
+						size: gt_hooks.s,
+						color: gt_hooks.c
+					}
+				}
+			}			
+		}
+		return obj;
+	}
+
+	//console.log(createToolsHash(parseHash('#$majorMode=chart$is;shi=t;ly=2003;lb=f;il=t;fs=11;al=30;stl=t;st=t;nsl=t;se=t$wst;tts=C$ts;sp=4.67741935483871;ti=1990$zpv;v=0$inc_x;mmid=XCOORDS;iid=phAwcNAVuyj1jiMAkmq1iMg;by=ind$inc_y;mmid=YCOORDS;iid=0ArfEDsV3bBwCcGhBd2NOQVZ1eWowNVpSNjl1c3lRSWc;by=ind$inc_s;uniValue=8.21;iid=phAwcNAVuyj0XOoBL_n5tAQ;by=ind$inc_c;uniValue=255;gid=CATID0;by=grp$map_x;scale=log;dataMin=322;dataMax=99220$map_y;scale=log;dataMin=1.768;dataMax=369$map_s;sma=49;smi=2.65$cd;bd=0$inds=i231_d001990b2aq;i65_l001990btaI;i175_l001990bxar;modified=62')));
+
+
+	</script>
+	<div id="mocha"></div>
+
+	<script src="test.js"></script>
+	<script>
+		mocha.run();
+	
+		$(function() {
+			hashes.forEach(function(hash) {
+				var gwHash = parseHash(hash.hash);
+				var gtHash = createToolsHash(gwHash);
+				var gtTool = (gwHash.majorMode == 'chart') ? 'bubbles' : 'map';
+				console.log(hash.hash);
+				console.log(gwHash);
+				console.log(gtHash);
+				var gtHashString = URLON.stringify(gtHash);
+				$('#urls').append('<tr><td>' + hash.name + '</td><td><a target="_blank" href="http://gapminder.org/world/' + hash.hash + '">GW url</a></td><td><a target="_blank" href="http://tools-stage.gapminderdev.org/tools/#' + gtHashString + '">GT url</a></td>');
+			})
+
+		})
+	</script>
+
+	<table>
+		<thead>
+			<tr>
+				<th>Name</th><th>GW url</th><th>GT url</th>
+			</r>
+		</thead>
+		<tbody id="urls">
+
+
+		</tbody>
+	</table>
+
+
+</body>
+</html>
