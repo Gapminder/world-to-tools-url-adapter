@@ -192,6 +192,8 @@
 			if (gwHash[map]) {
 				if (hook == 's') {
 					gt_hooks[hook].extent = [(gwHash[map].smi/120),(gwHash[map].sma/120)];
+					gt_hooks[hook].domainMin = null;
+					gt_hooks[hook].domainMax = null;
 				} else {
 					gt_hooks[hook].scaleType = scaletypes[gwHash[map].scale] || gt_hooks[hook].scaleType || gwHash[map].scale; // if time it's already set
  					gt_hooks[hook].zoomedMin = gwHash[map].dataMin;
@@ -230,6 +232,7 @@
 				state: {
 					time: {
 						value: gwHash.ts.ti || null,
+						delay: 300 - gwHash.ts.sp*20 || 100
 					},
 					entities: {
 					},
@@ -254,17 +257,16 @@
 				state: {
 					time: {
 						value: gwHash.ts.ti || null,
-					},
-					entities: {
+						delay: 500 - gwHash.ts.sp*40 || 100
 					},
 					marker: {
 						select: select,
 						opacitySelectDim: (gwHash.is.al/100),
-						lat: {
+						hook_lat: {
 							use: 'property',
 							which: 'latitude'
 						},
-						lng: {
+						hook_lng: {
 							use: 'property',
 							which: 'longitude'
 						},
@@ -295,8 +297,9 @@
 				console.log(hash.hash);
 				console.log(gwHash);
 				console.log(gtHash);
+				var gtUrl = "http://tools.gapminder.org/#";
 				var gtHashString = URLON.stringify(gtHash);
-				$('#urls').append('<tr><td>' + hash.name + '</td><td><a target="_blank" href="http://gapminder.org/world/' + hash.hash + '">GW url</a></td><td><a target="_blank" href="http://tools-stage.gapminderdev.org/tools/#' + gtHashString + '">GT url</a></td>');
+				$('#urls').append('<tr><td>' + hash.name + '</td><td><a target="_blank" href="http://gapminder.org/world/' + hash.hash + '">GW url</a></td><td><a target="_blank" href="' +gtUrl + gtHashString + '">GT url</a></td>');
 			})
 
 		})
